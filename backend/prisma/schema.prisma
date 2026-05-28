@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model SearchSession {
+  id              String    @id @default(cuid())
+  medicationName  String
+  strength        String?
+  quantity        String?
+  zipCode         String
+  radius          Int       @default(10)
+  userNotes       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  pharmacies      Pharmacy[]
+}
+
+model Pharmacy {
+  id            String              @id @default(cuid())
+  searchSessionId String
+  searchSession SearchSession       @relation(fields: [searchSessionId], references: [id], onDelete: Cascade)
+  name          String
+  address       String
+  phone         String?
+  lat           Float?
+  lng           Float?
+  distanceMiles Float?
+  source        String              @default("nominatim")
+  createdAt     DateTime            @default(now())
+  contactLogs   PharmacyContactLog[]
+
+  @@index([searchSessionId])
+}
+
+model PharmacyContactLog {
+  id                String   @id @default(cuid())
+  pharmacyId        String
+  pharmacy          Pharmacy @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  status            String   @default("not_contacted")
+  note              String?
+  nextStep          String?
+  priceQuoted       String?
+  insuranceAccepted String?  // yes | no | unknown
+  contactedAt       DateTime @default(now())
+
+  @@index([pharmacyId])
+}
