@@ -23,17 +23,17 @@ export const STATUS_OPTIONS: PharmacyStatus[] = [
 export function statusBadgeClass(status: PharmacyStatus): string {
   switch (status) {
     case "in_stock":
-      return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300";
+      return "bg-[var(--color-accent-soft)] text-[var(--color-accent)] ring-1 ring-[var(--color-accent)]/20";
     case "out_of_stock":
-      return "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300";
+      return "bg-[var(--color-danger-bg)] text-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/15";
     case "partial_stock":
-      return "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300";
+      return "bg-[var(--color-warning-bg)] text-[#8a6914] dark:text-[#d4a83a] ring-1 ring-[var(--color-warning-border)]/30";
     case "called":
     case "left_voicemail":
     case "will_order":
-      return "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300";
+      return "bg-[#e8eef5] text-[#3d5a73] dark:bg-[#1a2835] dark:text-[#8eb4d4] ring-1 ring-[#3d5a73]/10";
     default:
-      return "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300";
+      return "bg-[var(--color-surface)] text-[var(--color-muted)] ring-1 ring-[var(--color-border)]";
   }
 }
 
@@ -42,4 +42,33 @@ export function latestStatus(
 ): PharmacyStatus {
   if (!logs.length) return "not_contacted";
   return logs[0].status;
+}
+
+/** Marker fill color for map pins */
+export function mapMarkerColor(status: PharmacyStatus): string {
+  switch (status) {
+    case "in_stock":
+      return "#1b6b5a";
+    case "partial_stock":
+      return "#c9a227";
+    case "out_of_stock":
+      return "#9b2c2c";
+    case "will_order":
+      return "#3d5a73";
+    case "called":
+    case "left_voicemail":
+      return "#5c6b65";
+    default:
+      return "#b8b0a2";
+  }
+}
+
+export const STOCK_AVAILABLE_STATUSES: PharmacyStatus[] = [
+  "in_stock",
+  "partial_stock",
+  "will_order",
+];
+
+export function hasStockSignal(status: PharmacyStatus): boolean {
+  return STOCK_AVAILABLE_STATUSES.includes(status);
 }

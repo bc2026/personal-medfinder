@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { parsePharmacyPhone } from "../lib/phone.js";
 import { prisma } from "../lib/prisma.js";
 import { contactLogSchema, createSearchSchema } from "../lib/validation.js";
 import { findNearbyPharmacies } from "../services/pharmacySearch.js";
@@ -147,6 +148,7 @@ sessionsRouter.get("/:id", async (req, res) => {
       pharmacies: {
         include: {
           contactLogs: { orderBy: { contactedAt: "desc" } },
+          voiceCalls: { orderBy: { createdAt: "desc" }, take: 3 },
         },
         orderBy: { distanceMiles: "asc" },
       },
@@ -156,7 +158,15 @@ sessionsRouter.get("/:id", async (req, res) => {
     res.status(404).json({ error: "Session not found" });
     return;
   }
-  res.json(session);
+  res.json({
+    ...session,
+    pharmacies: session.pharmacies.map((p) => ({
+      ...p,
+      availableMedications: p.availableMedications
+        ? (JSON.parse(p.availableMedications) as string[])
+        : null,
+    })),
+  });
 });
 
 sessionsRouter.post("/", async (req, res) => {
@@ -186,7 +196,7 @@ sessionsRouter.post("/", async (req, res) => {
         create: pharmacies.map((p) => ({
           name: p.name,
           address: p.address,
-          phone: p.phone,
+          phone: parsePharmacyPhone(p.phone) ?? undefined,
           lat: p.lat,
           lng: p.lng,
           distanceMiles: p.distanceMiles,

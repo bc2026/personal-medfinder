@@ -32,7 +32,7 @@ export function NewSearch() {
       if (usedFallback) {
         sessionStorage.setItem(
           "medfinder-toast",
-          "Live pharmacy lookup was unavailable — showing sample/demo pharmacies. You can still log real call results."
+          "Live pharmacy lookup was unavailable — showing sample pharmacies without phone numbers. Add real pharmacies manually or try again later."
         );
       }
       navigate(`/sessions/${session.id}`);
@@ -44,47 +44,46 @@ export function NewSearch() {
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold mb-1">New medication search</h1>
-      <p className="text-[var(--color-muted)] mb-6">
-        Find nearby pharmacies, then confirm stock by phone.
+    <div className="page-enter max-w-xl">
+      <h1 className="page-title">New medication search</h1>
+      <p className="page-lead mb-8">
+        Find nearby pharmacies, then confirm stock by phone or AI-assisted call.
       </p>
 
       <DisclaimerBanner />
 
-      <form
-        onSubmit={handleSubmit}
-        className="max-w-lg space-y-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6"
-      >
+      <form onSubmit={handleSubmit} className="card p-6 sm:p-8 space-y-5 page-enter stagger-2">
         <label className="block text-sm">
-          <span className="font-medium">Medication name *</span>
+          <span className="font-semibold text-[var(--color-ink)]">
+            Medication name <span className="text-[var(--color-accent)]">*</span>
+          </span>
           <input
             required
             value={form.medicationName}
             onChange={(e) =>
               setForm({ ...form, medicationName: e.target.value })
             }
-            className="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2"
+            className="input font-display text-lg"
             placeholder="e.g. Lisinopril"
           />
         </label>
 
         <div className="grid sm:grid-cols-2 gap-4">
           <label className="block text-sm">
-            <span className="font-medium">Strength</span>
+            <span className="font-semibold">Strength</span>
             <input
               value={form.strength}
               onChange={(e) => setForm({ ...form, strength: e.target.value })}
-              className="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2"
+              className="input"
               placeholder="10mg"
             />
           </label>
           <label className="block text-sm">
-            <span className="font-medium">Quantity</span>
+            <span className="font-semibold">Quantity</span>
             <input
               value={form.quantity}
               onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-              className="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2"
+              className="input"
               placeholder="30 tablets"
             />
           </label>
@@ -92,19 +91,21 @@ export function NewSearch() {
 
         <div className="grid sm:grid-cols-2 gap-4">
           <label className="block text-sm">
-            <span className="font-medium">ZIP code *</span>
+            <span className="font-semibold">
+              ZIP code <span className="text-[var(--color-accent)]">*</span>
+            </span>
             <input
               required
               pattern="\d{5}"
               maxLength={5}
               value={form.zipCode}
               onChange={(e) => setForm({ ...form, zipCode: e.target.value })}
-              className="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2"
+              className="input tabular-nums"
               placeholder="08901"
             />
           </label>
           <label className="block text-sm">
-            <span className="font-medium">Radius (miles)</span>
+            <span className="font-semibold">Radius (miles)</span>
             <input
               type="number"
               min={1}
@@ -113,31 +114,27 @@ export function NewSearch() {
               onChange={(e) =>
                 setForm({ ...form, radius: Number(e.target.value) })
               }
-              className="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2"
+              className="input"
             />
           </label>
         </div>
 
         <label className="block text-sm">
-          <span className="font-medium">Notes</span>
+          <span className="font-semibold">Notes</span>
           <textarea
             value={form.userNotes}
             onChange={(e) => setForm({ ...form, userNotes: e.target.value })}
             rows={2}
-            className="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2"
+            className="input resize-y min-h-[4.5rem]"
             placeholder="Insurance, preferred chain, urgency…"
           />
         </label>
 
         {error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-sm text-[var(--color-danger)] font-medium">{error}</p>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2.5 rounded-lg bg-[var(--color-accent)] text-white font-medium hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
-        >
+        <button type="submit" disabled={loading} className="btn-primary w-full py-3">
           {loading ? "Finding pharmacies…" : "Find nearby pharmacies"}
         </button>
       </form>

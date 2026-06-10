@@ -20,7 +20,7 @@ async function main() {
           {
             name: "Community Care Pharmacy",
             address: "120 Main St, New Brunswick, NJ",
-            phone: "(732) 555-2010",
+            phone: "+17324652810",
             distanceMiles: 0.9,
             source: "seed",
             contactLogs: {
@@ -35,7 +35,7 @@ async function main() {
           {
             name: "Riverside Drug & Wellness",
             address: "88 Oak Ave, New Brunswick, NJ",
-            phone: "(732) 555-3102",
+            phone: "+17328931102",
             distanceMiles: 1.5,
             source: "seed",
             contactLogs: {
@@ -50,7 +50,7 @@ async function main() {
           {
             name: "Northside Family Pharmacy",
             address: "410 Cedar Ln, New Brunswick, NJ",
-            phone: "(732) 555-8821",
+            phone: "+17328458821",
             distanceMiles: 2.3,
             source: "seed",
             contactLogs: {

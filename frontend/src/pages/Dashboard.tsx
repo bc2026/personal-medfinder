@@ -22,40 +22,44 @@ export function Dashboard() {
   }, []);
 
   if (loading) {
-    return <p className="text-[var(--color-muted)]">Loading dashboard…</p>;
+    return (
+      <p className="text-[var(--color-muted)] page-enter">Loading dashboard…</p>
+    );
   }
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/30 p-4 text-red-800 dark:text-red-200">
-        Could not reach API. Start the backend with{" "}
-        <code className="text-sm">npm run dev</code> in <code>backend/</code>.
+      <div className="card border-[var(--color-danger)] bg-[var(--color-danger-bg)] p-5 text-[var(--color-danger)] page-enter">
+        <p className="font-display font-semibold text-lg">Could not reach API</p>
+        <p className="mt-2 text-sm opacity-90">
+          Start the backend with <code className="text-xs font-mono">npm run dev</code> in{" "}
+          <code className="text-xs font-mono">backend/</code>, or run{" "}
+          <code className="text-xs font-mono">npm run docker:up</code>.
+        </p>
         <p className="mt-2 text-sm">{error}</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+    <div className="page-enter">
+      <div className="flex flex-wrap items-end justify-between gap-6 mb-8">
         <div>
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="text-[var(--color-muted)] mt-1">
-            Track outreach across all medication searches.
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-lead">
+            Track outreach across all medication searches — calls, notes, and stock
+            signals in one place.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 page-enter stagger-2">
           <button
             type="button"
             onClick={() => api.exportAllCsv()}
-            className="px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="btn-secondary"
           >
             Export all CSV
           </button>
-          <Link
-            to="/search/new"
-            className="px-4 py-2 text-sm rounded-lg bg-[var(--color-accent)] text-white font-medium hover:bg-[var(--color-accent-hover)]"
-          >
+          <Link to="/search/new" className="btn-primary">
             New search
           </Link>
         </div>
@@ -64,11 +68,11 @@ export function Dashboard() {
       <DisclaimerBanner />
 
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-10 page-enter stagger-3">
           <StatCard label="Sessions" value={stats.totalSessions} />
           <StatCard label="Pharmacies found" value={stats.pharmaciesFound} />
           <StatCard label="Contacted" value={stats.pharmaciesContacted} />
-          <StatCard label="In stock" value={stats.inStock} />
+          <StatCard label="In stock" value={stats.inStock} accent />
           <StatCard
             label="Pending follow-up"
             value={stats.pendingFollowUp}
@@ -77,47 +81,60 @@ export function Dashboard() {
         </div>
       )}
 
-      <section>
-        <h2 className="text-lg font-medium mb-3">Search history</h2>
+      <section className="page-enter stagger-4">
+        <h2 className="font-display text-xl font-semibold mb-4">Search history</h2>
         {sessions.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-[var(--color-border)] p-8 text-center">
-            <p className="text-[var(--color-muted)]">No searches yet.</p>
-            <Link
-              to="/search/new"
-              className="inline-block mt-3 text-[var(--color-accent)] font-medium hover:underline"
-            >
-              Start your first search →
+          <div className="card border-dashed p-10 sm:p-12 text-center">
+            <p className="font-display text-lg text-[var(--color-muted)]">
+              No searches yet
+            </p>
+            <p className="mt-2 text-sm text-[var(--color-muted)] max-w-sm mx-auto">
+              Start by finding pharmacies near a ZIP code, then log what you learn
+              from each call.
+            </p>
+            <Link to="/search/new" className="btn-primary mt-6 inline-flex">
+              Start your first search
             </Link>
           </div>
         ) : (
-          <ul className="space-y-2">
-            {sessions.map((s) => (
-              <li key={s.id}>
+          <ul className="space-y-2.5">
+            {sessions.map((s, i) => (
+              <li
+                key={s.id}
+                className="page-enter-fade"
+                style={{ animationDelay: `${0.05 * Math.min(i, 8)}s` }}
+              >
                 <Link
                   to={`/sessions/${s.id}`}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-4 py-3 hover:border-[var(--color-accent)] transition-colors"
+                  className="card-interactive flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5"
                 >
-                  <div>
-                    <p className="font-medium">
+                  <div className="min-w-0">
+                    <p className="font-display text-lg font-semibold truncate">
                       {s.medicationName}
                       {s.strength && (
-                        <span className="text-[var(--color-muted)] font-normal">
+                        <span className="text-[var(--color-muted)] font-normal text-base">
                           {" "}
                           · {s.strength}
                         </span>
                       )}
                     </p>
-                    <p className="text-sm text-[var(--color-muted)]">
+                    <p className="text-sm text-[var(--color-muted)] mt-0.5">
                       ZIP {s.zipCode} ·{" "}
-                      {new Date(s.createdAt).toLocaleDateString()}
+                      {new Date(s.createdAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
                     </p>
                   </div>
-                  <div className="text-sm text-right text-[var(--color-muted)]">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                  <div className="text-sm text-right shrink-0">
+                    <span className="font-semibold text-[var(--color-accent)]">
                       {s.inStockCount} in stock
                     </span>
-                    {" · "}
-                    {s.contactedCount}/{s.pharmacyCount} contacted
+                    <span className="text-[var(--color-muted)]">
+                      {" "}
+                      · {s.contactedCount}/{s.pharmacyCount} contacted
+                    </span>
                   </div>
                 </Link>
               </li>

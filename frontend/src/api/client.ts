@@ -4,6 +4,9 @@ import type {
   DashboardStats,
   SearchSession,
   SessionSummary,
+  VoiceAgentConfig,
+  VoiceCall,
+  VoiceCallDetail,
 } from "../types";
 
 const BASE = "";
@@ -57,4 +60,20 @@ export const api = {
   exportAllCsv: () => {
     window.open("/api/sessions/export/all.csv", "_blank");
   },
+
+  getVoiceConfig: () => request<VoiceAgentConfig>("/api/voice/config"),
+
+  startVoiceCall: (sessionId: string, pharmacyId: string) =>
+    request<VoiceCall>(
+      `/api/voice/sessions/${sessionId}/pharmacies/${pharmacyId}/call`,
+      { method: "POST" }
+    ),
+
+  getVoiceCall: (voiceCallId: string) =>
+    request<VoiceCallDetail>(`/api/voice/calls/${voiceCallId}`),
+
+  cancelVoiceCall: (voiceCallId: string) =>
+    request<VoiceCall>(`/api/voice/calls/${voiceCallId}/cancel`, {
+      method: "POST",
+    }),
 };

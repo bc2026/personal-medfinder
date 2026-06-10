@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+dist
+**/dist
+.env
+**/.env
+*.db
+*.db-journal
+.git
+.DS_Store
+*.md
+!README.md
+.cursor
+agent-transcripts
+**/*.tsbuildinfo

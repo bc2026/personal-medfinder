@@ -18,6 +18,58 @@ export interface ContactLog {
   contactedAt: string;
 }
 
+export type VoiceCallStatus =
+  | "pending"
+  | "queued"
+  | "ringing"
+  | "in_progress"
+  | "completed"
+  | "failed";
+
+export interface VoiceCall {
+  id: string;
+  pharmacyId: string;
+  provider: string;
+  externalId: string | null;
+  listenUrl: string | null;
+  status: VoiceCallStatus;
+  errorMessage: string | null;
+  transcript: string | null;
+  extractedJson: string | null;
+  contactLogId: string | null;
+  endedReason: string | null;
+  durationSeconds: number | null;
+  recordingUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VoiceCallPharmacy {
+  id: string;
+  name: string;
+  phone: string | null;
+  searchSessionId: string;
+}
+
+export interface VoiceCallDetail extends VoiceCall {
+  pharmacy: VoiceCallPharmacy;
+  siblingCallIds: string[];
+}
+
+export interface StockCheckExtraction {
+  status: string;
+  note?: string;
+  nextStep?: string;
+  priceQuoted?: string;
+  insuranceAccepted?: string;
+}
+
+export interface VoiceAgentConfig {
+  enabled: boolean;
+  provider: string;
+  hasAssistantId: boolean;
+}
+
 export interface Pharmacy {
   id: string;
   searchSessionId: string;
@@ -28,7 +80,9 @@ export interface Pharmacy {
   lng: number | null;
   distanceMiles: number | null;
   source: string;
+  availableMedications: string[] | null;
   contactLogs: ContactLog[];
+  voiceCalls?: VoiceCall[];
 }
 
 export interface SearchSession {
