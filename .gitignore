@@ -4,3 +4,10 @@ dist/
 *.db
 *.db-journal
 .DS_Store
+
+# local AI tool config, not part of the app
+.cursor/
+.claude/
+.cursorrules
+.impeccable/
+*.tsbuildinfo

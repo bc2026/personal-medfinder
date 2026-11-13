@@ -1,9 +1,0 @@
-# Design context (Personal Medfinder)
-
-Strategic and voice decisions live in **`PRODUCT.md`** (register: **product**, solo personal workflow, honest limits about inventory, task-first principles).
-
-Visual tokens, typography, components, and do/don’t guidance live in **`DESIGN.md`** (Stitch-oriented; mirrors `frontend/src/index.css` and shared primitives).
-
-When changing UI: **DESIGN.md** wins on look and components; **PRODUCT.md** wins on purpose, tone, and anti-patterns. Prefer existing CSS variables (`--color-*`, `--font-*`) and classes (`.btn-primary`, `.card`, `.input`, `.page-title`) before new one-off styles.
-
-Impeccable **live** mode is preconfigured in **`.impeccable/live/config.json`** (injects into `frontend/index.html`). Run `npm run dev` from the repo root, then `node .cursor/skills/impeccable/scripts/live.mjs` when iterating in the browser.
