@@ -2,7 +2,7 @@ export function DisclaimerBanner() {
   return (
     <div
       role="note"
-      className="mb-6 rounded-2xl border-l-4 border-[var(--color-warning-border)] bg-[var(--color-warning-bg)] px-4 py-3.5 text-sm leading-relaxed page-enter"
+      className="mb-6 rounded-2xl border border-[var(--color-warning-border)] bg-[var(--color-warning-bg)] px-4 py-3.5 text-sm leading-relaxed page-enter"
     >
       <span className="font-display font-semibold text-[var(--color-ink)]">
         Important

@@ -14,7 +14,7 @@ function markerIcon(status: PharmacyStatus) {
   const color = mapMarkerColor(status);
   return L.divIcon({
     className: "stock-map-marker",
-    html: `<span style="background:${color};width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);display:block"></span>`,
+    html: `<span style="background:${color};width:16px;height:16px;border-radius:50%;border:2px solid var(--color-surface-elevated);box-shadow:0 1px 4px rgba(0,0,0,.35);display:block"></span>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
     popupAnchor: [0, -10],
@@ -95,15 +95,18 @@ export function StockMap({
           {visible.length} on map
           {stockOnly ? " (stock signals only)" : ""}
           {" · "}
-          <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+          <span className="font-medium text-[var(--color-success)]">
             {stockCount} with stock signal
           </span>
         </span>
         <MapLegend />
       </div>
+      <p className="mb-2 text-xs text-[var(--color-muted)]">
+        Use the map’s + / − controls or pinch to zoom. Scroll wheel zoom is off to avoid accidental zoom.
+      </p>
 
       {stockOnly && visible.length === 0 && (
-        <p className="mb-2 text-sm text-amber-700 dark:text-amber-300">
+        <p className="mb-2 text-sm text-[var(--color-muted)]">
           No pharmacies marked in stock, partial stock, or will order yet. Turn
           off “Stock only” to see all locations.
         </p>
@@ -119,7 +122,7 @@ export function StockMap({
         <MapContainer
           center={center}
           zoom={12}
-          scrollWheelZoom
+          scrollWheelZoom={false}
           className="h-full w-full"
         >
           <TileLayer
@@ -137,29 +140,29 @@ export function StockMap({
                 icon={markerIcon(status)}
               >
                 <Popup>
-                  <div className="text-sm min-w-[180px]">
-                    <p className="font-semibold text-slate-900">{p.name}</p>
-                    <p className="text-slate-600 mt-0.5">{p.address}</p>
+                  <div className="min-w-[180px] text-sm">
+                    <p className="stock-map-popup-name">{p.name}</p>
+                    <p className="stock-map-popup-muted mt-0.5">{p.address}</p>
                     {p.distanceMiles != null && (
-                      <p className="text-slate-500 text-xs mt-1">
+                      <p className="stock-map-popup-muted mt-1 text-xs">
                         {p.distanceMiles} mi away
                       </p>
                     )}
                     <p
-                      className="mt-2 font-medium"
+                      className="stock-map-popup-status mt-2"
                       style={{ color: mapMarkerColor(status) }}
                     >
                       {STATUS_LABELS[status]}
                     </p>
                     {log?.note && (
-                      <p className="mt-1 text-slate-600 text-xs line-clamp-3">
+                      <p className="stock-map-popup-muted mt-1 text-xs line-clamp-3">
                         {log.note}
                       </p>
                     )}
                     {p.phone && (
                       <a
                         href={`tel:${p.phone.replace(/\D/g, "")}`}
-                        className="mt-2 inline-block text-teal-700 underline text-xs"
+                        className="stock-map-popup-link"
                       >
                         {p.phone}
                       </a>

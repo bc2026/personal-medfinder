@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { DisclaimerBanner } from "../components/DisclaimerBanner";
 import { PharmacyCard } from "../components/PharmacyCard";
@@ -15,6 +15,7 @@ type ViewMode = "list" | "map" | "split";
 
 export function SessionDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [session, setSession] = useState<SearchSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +28,7 @@ export function SessionDetail() {
   const [voiceAgentEnabled, setVoiceAgentEnabled] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("split");
   const [mapStockOnly, setMapStockOnly] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const load = useCallback((opts?: { silent?: boolean }) => {
     if (!id) return;
@@ -47,7 +49,12 @@ export function SessionDetail() {
   }, [id]);
 
   useEffect(() => {
-    api.getVoiceConfig().then((c) => setVoiceAgentEnabled(c.enabled));
+    api
+      .getVoiceConfig()
+      .then((c) => setVoiceAgentEnabled(c.enabled))
+      .catch(() => {
+        // Voice agent stays off; core flows work without it
+      });
   }, []);
 
   const needsVoiceRefresh = useMemo(
@@ -104,15 +111,32 @@ export function SessionDetail() {
     return list;
   }, [session, filter, statusFilter, sort]);
 
-  async function handleDelete() {
-    if (!id || !confirm("Delete this search session and all logs?")) return;
-    await api.deleteSession(id);
-    window.location.href = "/";
+  async function handleConfirmDelete() {
+    if (!id) return;
+    try {
+      await api.deleteSession(id);
+      navigate("/");
+    } catch (e) {
+      setDeleteConfirm(false);
+      setToast(e instanceof Error ? `Delete failed: ${e.message}` : "Delete failed");
+    }
   }
 
   if (loading) {
     return (
-      <p className="text-[var(--color-muted)] page-enter">Loading session…</p>
+      <div className="page-enter-fade" role="status" aria-label="Loading session">
+        <div className="skeleton h-5 w-28" />
+        <div className="skeleton mt-6 h-10 w-72 max-w-full" />
+        <div className="skeleton mt-3 h-5 w-96 max-w-full" />
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          <div className="skeleton h-[320px]" />
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="skeleton h-24" />
+            ))}
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -186,31 +210,60 @@ export function SessionDetail() {
             {" · "}ZIP {session.zipCode} · {session.radius} mi radius
           </p>
           {session.userNotes && (
-            <p className="mt-3 text-sm text-[var(--color-muted)] border-l-2 border-[var(--color-border-strong)] pl-3 italic">
+            <p className="mt-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm italic text-[var(--color-muted)]">
               {session.userNotes}
             </p>
           )}
         </div>
-        <div className="flex flex-wrap gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={() => api.exportSessionJson(session.id)}
-            className="btn-secondary"
+            className="btn-secondary min-h-11"
           >
             Export JSON
           </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="btn px-4 py-2 border border-[var(--color-danger)] text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)]"
-          >
-            Delete
-          </button>
+          {!deleteConfirm ? (
+            <button
+              type="button"
+              onClick={() => setDeleteConfirm(true)}
+              className="btn min-h-11 border border-[var(--color-danger)] px-4 py-2 text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)]"
+            >
+              Delete
+            </button>
+          ) : (
+            <div
+              className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
+              role="group"
+              aria-label="Confirm delete session"
+            >
+              <span className="text-[var(--color-ink)]">Delete this session and all logs?</span>
+              <button
+                type="button"
+                className="btn-ghost min-h-11 px-3 text-sm"
+                onClick={() => setDeleteConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn min-h-11 border border-[var(--color-danger)] bg-[var(--color-danger-bg)] px-3 text-sm font-semibold text-[var(--color-danger)] hover:opacity-90"
+                onClick={handleConfirmDelete}
+              >
+                Confirm delete
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {toast && (
-        <div className="mt-5 card border-[var(--color-warning-border)] bg-[var(--color-warning-bg)] px-4 py-3 text-sm flex flex-wrap items-start justify-between gap-2">
+        <div
+          className="mt-5 card border border-[var(--color-warning-border)] bg-[var(--color-warning-bg)] px-4 py-3 text-sm flex flex-wrap items-start justify-between gap-2"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           <span>{toast}</span>
           <button
             type="button"
@@ -227,7 +280,7 @@ export function SessionDetail() {
       </div>
 
       {voiceAgentEnabled && (
-        <p className="mb-5 text-sm text-[var(--color-muted)] card px-4 py-3 border-l-4 border-l-[var(--color-accent)]">
+        <p className="mb-5 rounded-2xl border border-[var(--color-accent)]/35 bg-[var(--color-accent-soft)] px-4 py-3 text-sm text-[var(--color-muted)]">
           Voice agent is on — use{" "}
           <strong className="text-[var(--color-ink)] font-semibold">
             AI call to check stock
@@ -249,19 +302,26 @@ export function SessionDetail() {
       </div>
 
       <div className="mb-6 flex flex-wrap gap-3">
-        <input
-          type="search"
-          placeholder="Filter pharmacies…"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="input flex-1 min-w-[180px] !mt-0 text-sm py-2"
-        />
+        <div className="relative flex-1 min-w-[180px]">
+          <label htmlFor="pharmacy-filter" className="sr-only">
+            Filter pharmacies by name or address
+          </label>
+          <input
+            id="pharmacy-filter"
+            type="search"
+            placeholder="Filter pharmacies…"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="input !mt-0 text-sm py-2 min-h-11 w-full"
+          />
+        </div>
         <select
+          aria-label="Filter by stock or contact status"
           value={statusFilter}
           onChange={(e) =>
             setStatusFilter(e.target.value as PharmacyStatus | "all")
           }
-          className="input !mt-0 text-sm py-2 w-auto min-w-[10rem]"
+          className="input !mt-0 min-h-11 text-sm py-2 w-auto min-w-[10rem]"
         >
           <option value="all">All statuses</option>
           {(Object.keys(STATUS_LABELS) as PharmacyStatus[]).map((s) => (
@@ -271,15 +331,18 @@ export function SessionDetail() {
           ))}
         </select>
         <select
+          aria-label="Sort pharmacies"
           value={sort}
           onChange={(e) => setSort(e.target.value as SortKey)}
-          className="input !mt-0 text-sm py-2 w-auto min-w-[10rem]"
+          className="input !mt-0 min-h-11 text-sm py-2 w-auto min-w-[10rem]"
         >
           <option value="distance">Sort: distance</option>
           <option value="status">Sort: status</option>
           <option value="updated">Sort: last updated</option>
         </select>
       </div>
+
+      <h2 className="sr-only">Pharmacy results</h2>
 
       {viewMode === "map" && (
         <StockMap

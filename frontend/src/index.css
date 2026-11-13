@@ -19,6 +19,11 @@
   --color-warning-border: #c9a227;
   --color-danger: #9b2c2c;
   --color-danger-bg: #fceeed;
+  --color-success: #1b6b5a;
+  --color-on-accent: #fffcf7;
+  --color-badge-neutral-bg: #e8eef5;
+  --color-badge-neutral-text: #3d5a73;
+  --color-badge-neutral-ring: rgb(61 90 115 / 0.12);
   --color-shadow: 0 1px 2px rgb(26 46 40 / 0.04), 0 8px 24px rgb(26 46 40 / 0.06);
   --color-shadow-lg: 0 4px 12px rgb(26 46 40 / 0.08), 0 24px 48px rgb(26 46 40 / 0.1);
 }
@@ -37,6 +42,12 @@
   --color-warning-border: #a67c18;
   --color-danger: #f0a8a8;
   --color-danger-bg: #2a1515;
+  --color-success: #4db89f;
+  /* Dark accent (#4db89f) is light — white text on it fails 4.5:1; use dark ink */
+  --color-on-accent: #0e1512;
+  --color-badge-neutral-bg: #1a2835;
+  --color-badge-neutral-text: #8eb4d4;
+  --color-badge-neutral-ring: rgb(142 180 212 / 0.15);
   --color-shadow: 0 1px 2px rgb(0 0 0 / 0.2), 0 8px 24px rgb(0 0 0 / 0.25);
   --color-shadow-lg: 0 4px 12px rgb(0 0 0 / 0.3), 0 24px 48px rgb(0 0 0 / 0.4);
 }
@@ -79,6 +90,71 @@ html.dark body::before {
   z-index: 0;
 }
 
+/* Skip link: visually hidden until keyboard focus */
+.skip-link {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.skip-link:focus {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 200;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--color-surface-elevated),
+    0 0 0 4px var(--color-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .page-enter-fade {
+    animation: none !important;
+  }
+
+  .stagger-1,
+  .stagger-2,
+  .stagger-3,
+  .stagger-4,
+  .stagger-5 {
+    animation-delay: 0s !important;
+  }
+
+  .voice-drawer-panel,
+  .voice-drawer-backdrop {
+    animation: none !important;
+  }
+
+  .skeleton {
+    animation: none !important;
+  }
+
+  .card-interactive:hover {
+    transform: none;
+  }
+}
+
 .font-display {
   font-family: var(--font-display);
 }
@@ -119,7 +195,7 @@ html.dark body::before {
 .btn-primary {
   @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold text-sm
     transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none
-    px-5 py-2.5 bg-[var(--color-accent)] text-[#fffcf7]
+    px-5 py-2.5 bg-[var(--color-accent)] text-[var(--color-on-accent)]
     hover:bg-[var(--color-accent-hover)] shadow-sm;
 }
 
@@ -144,12 +220,12 @@ html.dark body::before {
 }
 
 .segmented-btn {
-  @apply px-3.5 py-1.5 text-sm font-medium rounded-lg transition-all duration-150
+  @apply min-h-11 px-3.5 py-1.5 text-sm font-medium rounded-lg transition-all duration-150
     text-[var(--color-muted)];
 }
 
 .segmented-btn[data-active="true"] {
-  @apply bg-[var(--color-accent)] text-[#fffcf7] shadow-sm;
+  @apply bg-[var(--color-accent)] text-[var(--color-on-accent)] shadow-sm;
 }
 
 .segmented-btn:not([data-active="true"]):hover {
@@ -173,6 +249,36 @@ html.dark body::before {
 .link-accent {
   @apply font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-hover)]
     underline-offset-2 hover:underline;
+}
+
+/* Consistent keyboard focus across all interactive primitives */
+.btn:focus-visible,
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-ghost:focus-visible,
+.segmented-btn:focus-visible,
+.link-accent:focus-visible,
+.link-back:focus-visible,
+.card-interactive:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Skeleton loading blocks (product register: skeletons over spinner text) */
+.skeleton {
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-border) 55%, var(--color-surface-elevated));
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 
 /* —— Motion —— */
@@ -229,7 +335,54 @@ html.dark body::before {
   background: var(--color-surface);
 }
 
-/* Voice drawer */
+.leaflet-popup-content-wrapper {
+  background: var(--color-surface-elevated);
+  color: var(--color-ink);
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--color-shadow-lg);
+}
+
+.leaflet-popup-content {
+  margin: 0.75rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--color-ink);
+}
+
+.leaflet-popup-tip {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: none;
+}
+
+.leaflet-popup-content .stock-map-popup-name {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.leaflet-popup-content .stock-map-popup-muted {
+  color: var(--color-muted);
+}
+
+.leaflet-popup-content .stock-map-popup-status {
+  font-weight: 600;
+}
+
+.leaflet-popup-content .stock-map-popup-link {
+  margin-top: 0.5rem;
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.leaflet-popup-content .stock-map-popup-link:hover {
+  color: var(--color-accent-hover);
+}
+
 @keyframes voice-drawer-in {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }

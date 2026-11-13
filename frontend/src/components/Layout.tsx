@@ -19,7 +19,7 @@ function LogoMark() {
         x="20"
         y="27"
         textAnchor="middle"
-        fill="#fffcf7"
+        className="fill-[var(--color-on-accent)]"
         fontSize="15"
         fontWeight="600"
         fontFamily="Georgia, 'Times New Roman', serif"
@@ -52,13 +52,16 @@ export function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface-elevated)]/90 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-3 group min-w-0">
             <LogoMark />
             <div className="min-w-0">
               <p className="font-display text-lg font-semibold leading-tight truncate group-hover:text-[var(--color-accent)] transition-colors">
-                Personal Medfinder
+                medzzz
               </p>
               <p className="text-xs text-[var(--color-muted)] tracking-wide uppercase">
                 Pharmacy outreach
@@ -76,9 +79,10 @@ export function Layout() {
                 <Link
                   key={item.to}
                   to={item.to}
-                  className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                  aria-current={active ? "page" : undefined}
+                  className={`min-h-11 inline-flex items-center rounded-xl px-3.5 py-2 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 ${
                     active
-                      ? "bg-[var(--color-accent)] text-[#fffcf7] shadow-sm"
+                      ? "bg-[var(--color-accent)] text-[var(--color-on-accent)] shadow-sm"
                       : "text-[var(--color-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-accent-soft)]"
                   }`}
                 >
@@ -89,7 +93,7 @@ export function Layout() {
             <button
               type="button"
               onClick={toggle}
-              className="ml-1 p-2.5 rounded-xl text-[var(--color-muted)] hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-accent)] transition-colors"
+              className="ml-1 flex min-h-11 min-w-11 items-center justify-center rounded-xl text-[var(--color-muted)] hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-accent)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
               aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
             >
               <ThemeIcon dark={dark} />
@@ -98,7 +102,11 @@ export function Layout() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-10 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--color-surface)]"
+      >
         <Outlet />
       </main>
 

@@ -31,7 +31,7 @@ export function statusBadgeClass(status: PharmacyStatus): string {
     case "called":
     case "left_voicemail":
     case "will_order":
-      return "bg-[#e8eef5] text-[#3d5a73] dark:bg-[#1a2835] dark:text-[#8eb4d4] ring-1 ring-[#3d5a73]/10";
+      return "bg-[var(--color-badge-neutral-bg)] text-[var(--color-badge-neutral-text)] ring-1 ring-[var(--color-badge-neutral-ring)]";
     default:
       return "bg-[var(--color-surface)] text-[var(--color-muted)] ring-1 ring-[var(--color-border)]";
   }
@@ -48,18 +48,18 @@ export function latestStatus(
 export function mapMarkerColor(status: PharmacyStatus): string {
   switch (status) {
     case "in_stock":
-      return "#1b6b5a";
+      return "var(--color-accent)";
     case "partial_stock":
-      return "#c9a227";
+      return "var(--color-warning-border)";
     case "out_of_stock":
-      return "#9b2c2c";
+      return "var(--color-danger)";
     case "will_order":
-      return "#3d5a73";
+      return "var(--color-badge-neutral-text)";
     case "called":
     case "left_voicemail":
-      return "#5c6b65";
+      return "var(--color-muted)";
     default:
-      return "#b8b0a2";
+      return "var(--color-border-strong)";
   }
 }
 

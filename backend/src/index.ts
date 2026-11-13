@@ -28,7 +28,7 @@ app.get("/health", (_req, res) => {
       process.env.TWILIO_AUTH_TOKEN &&
       process.env.TWILIO_PHONE_NUMBER &&
       process.env.PUBLIC_API_URL &&
-      process.env.OPENAI_API_KEY
+      (process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY)
   );
   res.json({
     ok: true,
@@ -57,7 +57,7 @@ app.use(
 
 const server = createServer(app);
 
-// WebSocket server for Twilio media streams (Twilio <-> OpenAI Realtime bridge)
+// WebSocket server for Twilio media streams (Twilio <-> Gemini Live bridge)
 const wss = new WebSocketServer({ noServer: true });
 
 server.on("upgrade", (req, socket, head) => {

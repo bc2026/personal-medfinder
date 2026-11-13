@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { latestStatus, STATUS_LABELS, statusBadgeClass, STATUS_OPTIONS } from "../lib/status";
 import {
@@ -35,6 +35,9 @@ export function PharmacyCard({
   const [saving, setSaving] = useState(false);
   const [calling, setCalling] = useState(false);
   const [viewingCallId, setViewingCallId] = useState<string | null>(null);
+  const [voiceConfirm, setVoiceConfirm] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const [form, setForm] = useState<ContactLogInput>({
     status,
     note: latestLog?.note ?? "",
@@ -55,22 +58,21 @@ export function PharmacyCard({
   const voiceDialable =
     pharmacy.phone != null && isDialableForVoice(pharmacy.phone);
 
-  async function handleVoiceCall() {
+  useEffect(() => {
+    if (voiceActive) setVoiceConfirm(false);
+  }, [voiceActive]);
+
+  async function startVoiceCallConfirmed() {
     if (!pharmacy.phone) return;
-    if (
-      !confirm(
-        `Start an AI voice call to ${pharmacy.name} to ask about medication stock?`
-      )
-    ) {
-      return;
-    }
+    setVoiceError(null);
     setCalling(true);
     try {
       const started = await api.startVoiceCall(sessionId, pharmacy.id);
+      setVoiceConfirm(false);
       onUpdated();
       setViewingCallId(started.id);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to start voice call");
+      setVoiceError(err instanceof Error ? err.message : "Failed to start voice call");
     } finally {
       setCalling(false);
     }
@@ -79,12 +81,13 @@ export function PharmacyCard({
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setSaveError(null);
     try {
       await api.logContact(sessionId, pharmacy.id, form);
       setExpanded(false);
       onUpdated();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to save");
+      setSaveError(err instanceof Error ? err.message : "Failed to save");
     } finally {
       setSaving(false);
     }
@@ -175,14 +178,52 @@ export function PharmacyCard({
 
       <div className="mt-3 flex flex-wrap gap-4 border-t border-[var(--color-border)] pt-3">
         {voiceAgentEnabled && pharmacy.phone && voiceDialable && (
-          <button
-            type="button"
-            onClick={handleVoiceCall}
-            disabled={calling || voiceActive}
-            className="link-accent text-sm disabled:opacity-50 disabled:no-underline"
-          >
-            {calling || voiceActive ? "Calling…" : "AI call to check stock"}
-          </button>
+          <>
+            {!voiceConfirm ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setVoiceError(null);
+                  setVoiceConfirm(true);
+                }}
+                disabled={calling || voiceActive}
+                className="link-accent min-h-11 text-sm disabled:opacity-50 disabled:no-underline"
+              >
+                {calling || voiceActive ? "Calling…" : "AI call to check stock"}
+              </button>
+            ) : (
+              <div
+                className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
+                role="group"
+                aria-label="Confirm AI voice call"
+              >
+                <span className="text-[var(--color-ink)]">
+                  Start AI call to <span className="font-semibold">{pharmacy.name}</span>?
+                </span>
+                <button
+                  type="button"
+                  className="btn-ghost min-h-11 px-2 text-xs"
+                  onClick={() => setVoiceConfirm(false)}
+                  disabled={calling}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary min-h-11 px-3 py-2 text-xs"
+                  onClick={startVoiceCallConfirmed}
+                  disabled={calling || voiceActive}
+                >
+                  {calling ? "Starting…" : "Start call"}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+        {voiceError && (
+          <p className="w-full text-sm font-medium text-[var(--color-danger)]" role="alert">
+            {voiceError}
+          </p>
         )}
         {voiceAgentEnabled && pharmacy.phone && !voiceDialable && (
           <span className="text-sm text-[var(--color-muted)]">
@@ -192,7 +233,7 @@ export function PharmacyCard({
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="link-accent text-sm"
+          className="link-accent min-h-11 text-sm"
         >
           {expanded ? "Cancel" : "Update status & notes"}
         </button>
@@ -280,16 +321,21 @@ export function PharmacyCard({
               }
               className="input"
             >
-              <option value="">Unknown</option>
+              <option value="">Not recorded</option>
               <option value="yes">Yes</option>
               <option value="no">No</option>
-              <option value="unknown">Unknown</option>
+              <option value="unknown">Asked — unclear</option>
             </select>
           </label>
 
-          <button type="submit" disabled={saving} className="btn-primary">
+          <button type="submit" disabled={saving} className="btn-primary min-h-11">
             {saving ? "Saving…" : "Save contact log"}
           </button>
+          {saveError && (
+            <p className="text-sm font-medium text-[var(--color-danger)]" role="alert">
+              {saveError}
+            </p>
+          )}
         </form>
       )}
     </article>

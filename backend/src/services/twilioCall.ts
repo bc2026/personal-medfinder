@@ -2,13 +2,17 @@ import { isDialableE164, normalizePhoneToE164 } from "../lib/phone.js";
 
 const TWILIO_API = "https://api.twilio.com/2010-04-01";
 
+function geminiApiKey(): string | undefined {
+  return process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? undefined;
+}
+
 export function twilioEnabled(): boolean {
   return Boolean(
     process.env.TWILIO_ACCOUNT_SID &&
       process.env.TWILIO_AUTH_TOKEN &&
       process.env.TWILIO_PHONE_NUMBER &&
       process.env.PUBLIC_API_URL &&
-      process.env.OPENAI_API_KEY
+      geminiApiKey()
   );
 }
 
@@ -31,7 +35,7 @@ export async function startTwilioCall(input: {
 }): Promise<{ externalId: string; listenUrl: null }> {
   if (!twilioEnabled()) {
     throw new Error(
-      "Twilio voice agent not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, PUBLIC_API_URL, and OPENAI_API_KEY."
+      "Twilio voice agent not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, PUBLIC_API_URL, and GEMINI_API_KEY (or GOOGLE_API_KEY) for Gemini Live."
     );
   }
 

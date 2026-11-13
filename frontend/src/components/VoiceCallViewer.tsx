@@ -93,6 +93,7 @@ function CallRecordingPlayer({
   durationSeconds: number | null;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const seekBarRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(durationSeconds ?? 0);
@@ -133,12 +134,42 @@ function CallRecordingPlayer({
     else audio.pause();
   }
 
-  function seek(e: React.MouseEvent<HTMLDivElement>) {
+  function seekFromClientX(clientX: number, el: HTMLElement) {
     const audio = audioRef.current;
     if (!audio || !duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    const rect = el.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
     audio.currentTime = ratio * duration;
+  }
+
+  function seekMouse(e: React.MouseEvent<HTMLDivElement>) {
+    seekFromClientX(e.clientX, e.currentTarget);
+  }
+
+  function seekKeyboard(e: React.KeyboardEvent<HTMLDivElement>) {
+    const audio = audioRef.current;
+    if (!audio || !duration) return;
+    const step = Math.max(5, duration / 20);
+    switch (e.key) {
+      case "ArrowRight":
+        e.preventDefault();
+        audio.currentTime = Math.min(duration, audio.currentTime + step);
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        audio.currentTime = Math.max(0, audio.currentTime - step);
+        break;
+      case "Home":
+        e.preventDefault();
+        audio.currentTime = 0;
+        break;
+      case "End":
+        e.preventDefault();
+        audio.currentTime = duration;
+        break;
+      default:
+        break;
+    }
   }
 
   return (
@@ -150,12 +181,16 @@ function CallRecordingPlayer({
         </span>
       </div>
       <div
-        className="relative h-12 cursor-pointer rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] overflow-hidden"
-        onClick={seek}
+        ref={seekBarRef}
+        tabIndex={0}
+        className="relative h-12 cursor-pointer rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-elevated)]"
+        onClick={seekMouse}
+        onKeyDown={seekKeyboard}
         role="slider"
         aria-valuemin={0}
-        aria-valuemax={duration}
-        aria-valuenow={current}
+        aria-valuemax={Math.ceil(duration || 0)}
+        aria-valuenow={Math.round(current)}
+        aria-valuetext={`${formatAudioTime(current)} of ${formatAudioTime(duration)}`}
         aria-label="Seek recording"
       >
         <div
@@ -176,7 +211,7 @@ function CallRecordingPlayer({
         <button
           type="button"
           onClick={togglePlay}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-[var(--color-accent)] text-white shadow-sm hover:bg-[var(--color-accent-hover)]"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md bg-[var(--color-accent)] text-[var(--color-on-accent)] shadow-sm hover:bg-[var(--color-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
           aria-label={playing ? "Pause" : "Play"}
         >
           {playing ? <IconPause /> : <IconPlay />}
@@ -238,7 +273,7 @@ function TranscriptMessages({
                   className={`mb-1 text-xs font-medium ${
                     msg.speaker === "assistant"
                       ? "text-[var(--color-accent)]"
-                      : "text-amber-600 dark:text-amber-400"
+                      : "text-[var(--color-badge-neutral-text)]"
                   }`}
                 >
                   {msg.label}
@@ -253,7 +288,7 @@ function TranscriptMessages({
       {endedLabel && !active && (
         <div className="mt-4 flex justify-center">
           <div className="flex max-w-[85%] items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xs">
-            <span className="text-red-500" aria-hidden>
+            <span className="text-[var(--color-danger)]" aria-hidden>
               ✕
             </span>
             <span>Call ended — {endedLabel}</span>
@@ -320,8 +355,16 @@ export function VoiceCallViewer({
   const [cancelling, setCancelling] = useState(false);
   const [tab, setTab] = useState<TabId>("transcripts");
   const [copied, setCopied] = useState(false);
+  const [showEndCallConfirm, setShowEndCallConfirm] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const prevStatusRef = useRef<VoiceCallStatus | null>(null);
   const notifiedContactLogRef = useRef<string | null>(null);
+
+  const TRANSCRIPT_TAB_ID = "voice-call-tab-transcripts";
+  const ANALYSIS_TAB_ID = "voice-call-tab-analysis";
+  const TRANSCRIPT_PANEL_ID = "voice-call-panel-transcripts";
+  const ANALYSIS_PANEL_ID = "voice-call-panel-analysis";
 
   useEffect(() => {
     setActiveCallId(initialCallId);
@@ -372,11 +415,65 @@ export function VoiceCallViewer({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        setShowEndCallConfirm(false);
+        onClose();
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  useEffect(() => {
+    const prev =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    previouslyFocusedRef.current = prev;
+    const panel = panelRef.current;
+    queueMicrotask(() => {
+      const sel =
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      const first = panel?.querySelector<HTMLElement>(sel);
+      first?.focus({ preventScroll: true });
+    });
+
+    function focusableInPanel(): HTMLElement[] {
+      if (!panel) return [];
+      const sel =
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      return Array.from(panel.querySelectorAll<HTMLElement>(sel)).filter(
+        (el) => !el.hasAttribute("disabled") && !el.getAttribute("aria-hidden")
+      );
+    }
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Tab" || !panel) return;
+      const items = focusableInPanel();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    panel?.addEventListener("keydown", onKeyDown);
+    return () => {
+      panel?.removeEventListener("keydown", onKeyDown);
+      previouslyFocusedRef.current?.focus({ preventScroll: true });
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!active) setShowEndCallConfirm(false);
+  }, [active]);
 
   const siblingIds = call?.siblingCallIds ?? [];
   const currentIndex = siblingIds.indexOf(activeCallId);
@@ -402,19 +499,13 @@ export function VoiceCallViewer({
       ? formatEndedReason(call.errorMessage)
       : null);
 
-  async function handleCancel() {
-    if (
-      !confirm(
-        "End this AI call now? The pharmacy line will be disconnected immediately."
-      )
-    ) {
-      return;
-    }
+  async function handleConfirmEndCall() {
     setCancelling(true);
     setError(null);
     try {
       const updated = await api.cancelVoiceCall(activeCallId);
       setCall((prev) => (prev ? { ...prev, ...updated } : prev));
+      setShowEndCallConfirm(false);
       onUpdated?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to cancel call");
@@ -451,23 +542,27 @@ export function VoiceCallViewer({
 
   const drawer = (
     <div className="fixed inset-0 z-[100] flex justify-end">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/40 voice-drawer-backdrop"
-        aria-label="Close call details"
+      <div
+        role="presentation"
+        className="absolute inset-0 cursor-default bg-black/40 voice-drawer-backdrop"
         onClick={onClose}
       />
       <div
+        ref={panelRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="voice-call-viewer-title"
-        className="voice-drawer-panel relative flex h-full w-full max-w-full flex-col overflow-hidden border-l border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-xl md:max-w-[70%]"
+        className="voice-drawer-panel relative flex h-full w-full max-w-full flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-xl md:max-w-[70%] outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
-          onClick={onClose}
-          className="absolute right-4 top-4 z-10 rounded-sm p-1 opacity-70 hover:opacity-100 hover:bg-[var(--color-border)]"
+          onClick={() => {
+            setShowEndCallConfirm(false);
+            onClose();
+          }}
+          className="absolute right-4 top-4 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-md opacity-70 hover:opacity-100 hover:bg-[var(--color-border)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
           aria-label="Close"
         >
           <IconClose />
@@ -481,7 +576,7 @@ export function VoiceCallViewer({
                 className="text-base font-normal truncate"
               >
                 {headerDate || "Call"}{" "}
-                <span className="text-[var(--color-muted)]">outboundPhoneCall</span>
+                <span className="text-[var(--color-muted)]">Outbound call</span>
               </h2>
               <span className="inline-flex items-center rounded-md border border-transparent bg-[var(--color-border)] px-2 py-0.5 text-xs font-semibold">
                 Assistant
@@ -492,7 +587,7 @@ export function VoiceCallViewer({
                 type="button"
                 disabled={!hasPrev}
                 onClick={() => hasPrev && setActiveCallId(siblingIds[currentIndex - 1]!)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-[var(--color-border)] disabled:opacity-40"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md hover:bg-[var(--color-border)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
                 aria-label="Previous call"
               >
                 <IconChevron up />
@@ -501,7 +596,7 @@ export function VoiceCallViewer({
                 type="button"
                 disabled={!hasNext}
                 onClick={() => hasNext && setActiveCallId(siblingIds[currentIndex + 1]!)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-[var(--color-border)] disabled:opacity-40"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md hover:bg-[var(--color-border)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
                 aria-label="Next call"
               >
                 <IconChevron />
@@ -542,7 +637,7 @@ export function VoiceCallViewer({
               <button
                 type="button"
                 onClick={copyId}
-                className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-[var(--color-border)]"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md hover:bg-[var(--color-border)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
                 aria-label="Copy call ID"
               >
                 <IconCopy />
@@ -554,7 +649,7 @@ export function VoiceCallViewer({
           )}
 
           {error && (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p className="mt-2 text-sm font-medium text-[var(--color-danger)]">{error}</p>
           )}
         </header>
 
@@ -568,49 +663,80 @@ export function VoiceCallViewer({
         )}
 
         {active && (
-          <div className="shrink-0 flex flex-wrap gap-2 border-b border-[var(--color-border)] px-4 py-2">
-            <button
-              type="button"
-              onClick={handleCancel}
-              disabled={cancelling}
-              className="px-3 py-1.5 text-sm rounded-lg border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50"
-            >
-              {cancelling ? "Ending…" : "End call"}
-            </button>
-            <button
-              type="button"
-              onClick={load}
-              disabled={cancelling}
-              className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border)]"
-            >
-              Refresh
-            </button>
-            {active && (
+          <div className="shrink-0 flex flex-col gap-2 border-b border-[var(--color-border)] px-4 py-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {!showEndCallConfirm ? (
+                <button
+                  type="button"
+                  onClick={() => setShowEndCallConfirm(true)}
+                  disabled={cancelling}
+                  className="min-h-11 rounded-lg border border-[var(--color-danger)] px-3 text-sm text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)] disabled:opacity-50"
+                >
+                  End call
+                </button>
+              ) : (
+                <div
+                  className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
+                  role="group"
+                  aria-label="Confirm end call"
+                >
+                  <span className="text-[var(--color-ink)]">
+                    Disconnect the pharmacy line now?
+                  </span>
+                  <button
+                    type="button"
+                    className="rounded-md border border-[var(--color-border)] px-2 py-1.5 text-xs font-medium hover:bg-[var(--color-accent-soft)]"
+                    onClick={() => setShowEndCallConfirm(false)}
+                    disabled={cancelling}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-md border border-[var(--color-danger)] bg-[var(--color-danger-bg)] px-2 py-1.5 text-xs font-semibold text-[var(--color-danger)] hover:opacity-85 disabled:opacity-50"
+                    onClick={handleConfirmEndCall}
+                    disabled={cancelling}
+                  >
+                    {cancelling ? "Ending…" : "End call"}
+                  </button>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={load}
+                disabled={cancelling}
+                className="min-h-11 rounded-lg border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-accent-soft)] disabled:opacity-50"
+              >
+                Refresh
+              </button>
               <span className="self-center text-xs text-[var(--color-muted)]">
                 Live · updates every 2s
               </span>
-            )}
+            </div>
           </div>
         )}
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div
             role="tablist"
+            aria-label="Call details"
             className="flex shrink-0 border-b border-[var(--color-border)] px-4"
           >
             {(
               [
-                ["transcripts", "Transcripts"],
-                ["analysis", "Analysis"],
+                ["transcripts", TRANSCRIPT_TAB_ID, TRANSCRIPT_PANEL_ID, "Transcripts"],
+                ["analysis", ANALYSIS_TAB_ID, ANALYSIS_PANEL_ID, "Analysis"],
               ] as const
-            ).map(([id, label]) => (
+            ).map(([id, tabId, panelId, label]) => (
               <button
                 key={id}
+                id={tabId}
                 type="button"
                 role="tab"
                 aria-selected={tab === id}
+                aria-controls={panelId}
                 onClick={() => setTab(id)}
-                className={`px-4 py-3 text-sm font-medium transition-colors relative top-px border-b-2 ${
+                className={`min-h-11 px-4 py-3 text-sm font-medium transition-colors relative top-px border-b-2 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent)] ${
                   tab === id
                     ? "border-[var(--color-accent)] text-[var(--color-ink)]"
                     : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-ink)]"
@@ -626,14 +752,28 @@ export function VoiceCallViewer({
           ) : (
             <>
               {tab === "transcripts" && (
-                <TranscriptMessages
-                  transcript={call?.transcript ?? null}
-                  active={active}
-                  endedLabel={endedLabel}
-                />
+                <div
+                  id={TRANSCRIPT_PANEL_ID}
+                  role="tabpanel"
+                  aria-labelledby={TRANSCRIPT_TAB_ID}
+                  className="flex min-h-0 flex-1 flex-col"
+                >
+                  <TranscriptMessages
+                    transcript={call?.transcript ?? null}
+                    active={active}
+                    endedLabel={endedLabel}
+                  />
+                </div>
               )}
               {tab === "analysis" && (
-                <AnalysisPanel extractedJson={call?.extractedJson ?? null} />
+                <div
+                  id={ANALYSIS_PANEL_ID}
+                  role="tabpanel"
+                  aria-labelledby={ANALYSIS_TAB_ID}
+                  className="flex min-h-0 flex-1 flex-col"
+                >
+                  <AnalysisPanel extractedJson={call?.extractedJson ?? null} />
+                </div>
               )}
             </>
           )}

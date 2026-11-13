@@ -23,7 +23,20 @@ export function Dashboard() {
 
   if (loading) {
     return (
-      <p className="text-[var(--color-muted)] page-enter">Loading dashboard…</p>
+      <div className="page-enter-fade" role="status" aria-label="Loading dashboard">
+        <div className="skeleton h-10 w-56" />
+        <div className="skeleton mt-3 h-5 w-80 max-w-full" />
+        <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="skeleton h-24" />
+          ))}
+        </div>
+        <div className="mt-10 space-y-2.5">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="skeleton h-20" />
+          ))}
+        </div>
+      </div>
     );
   }
 
@@ -55,11 +68,11 @@ export function Dashboard() {
           <button
             type="button"
             onClick={() => api.exportAllCsv()}
-            className="btn-secondary"
+            className="btn-secondary min-h-11"
           >
             Export all CSV
           </button>
-          <Link to="/search/new" className="btn-primary">
+          <Link to="/search/new" className="btn-primary min-h-11 inline-flex">
             New search
           </Link>
         </div>

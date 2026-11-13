@@ -134,7 +134,7 @@ export function NewSearch() {
           <p className="text-sm text-[var(--color-danger)] font-medium">{error}</p>
         )}
 
-        <button type="submit" disabled={loading} className="btn-primary w-full py-3">
+        <button type="submit" disabled={loading} className="btn-primary min-h-11 w-full py-3">
           {loading ? "Finding pharmacies…" : "Find nearby pharmacies"}
         </button>
       </form>
